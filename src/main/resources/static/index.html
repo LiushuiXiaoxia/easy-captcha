@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Captcha测试</title>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js">
+    </script>
+    <script src="./md5.js">
+    </script>
+</head>
+<body>
+<img src="" id="captcha" onclick="loadImage()">
+<br/>
+<input id="code" name="code" type="text"/>
+<button onclick="check()">check</button>
+<br/>
+<script type="text/javascript">
+    var captchaData = null;
+
+    function loadImage() {
+        $.ajax({
+            type: "post",
+            url: "/captcha/gen",
+            dataType: "json",
+            contentType: "application/json",
+            data: JSON.stringify({
+                channel: "11",
+                userId: "22"
+            }),
+            success: function (data, status) {
+                captchaData = data;
+                $('#captcha').attr('src', data.data.imageBase64Header + data.data.imageBase64);
+            }
+        });
+    }
+
+    function check() {
+        var text = $('#code').val();
+        if (captchaData != null && text.length > 0) {
+            $.ajax({
+                type: "post",
+                url: "/captcha/check",
+                dataType: "json",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    channel: "11",
+                    userId: "22",
+                    captchaId: captchaData.data.captchaId,
+                    captchaText: text
+                }),
+                success: function (data, status) {
+                    if (data.data) {
+                        alert('check success')
+                    } else {
+                        alert('check fail')
+                    }
+                }
+            });
+        }
+    }
+
+    loadImage();
+</script>
+</body>
+</html>
