@@ -236,8 +236,10 @@ class MainActivity : AppCompatActivity() {
 
 ## 效果展示
 
-![](doc/111.png)
+![](https://raw.githubusercontent.com/LiushuiXiaoxia/easy-captcha/master/doc/111.png)
 
 # 其他
+
+[Java 后端](https://github.com/LiushuiXiaoxia/easy-captcha)
 
 [Android 客户端](https://github.com/LiushuiXiaoxia/easy-captcha-android)
