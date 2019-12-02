@@ -1,9 +1,30 @@
-# Easy captcha
+# Restful风格的验证码
 
 ---
 
-Restful 风格的验证码，图片使用Base64编码。后端使用Redis存储验证码。
+<!-- TOC -->
 
+- Restful风格的验证码
+- 接口
+    - 生成验证码
+        - 接口信息
+        - 前端显示
+    - 校验
+        - 接口信息
+        - 前端校验
+- 移动端使用
+    - Android Retrofit Api
+    - Android UI
+    - 效果展示
+- 其他
+
+<!-- /TOC -->
+
+原有的验证码使用流的方式，对移动端不友好，并且现在后端是分布式的微服务系统，原有的基于cookie的验证码方式，显得力不从心。
+
+Restful 风格的验证码，图片使用Base64编码，后端使用Redis存储验证码。Android 客户端使用Retrofit + OkHttp。
+
+# 接口
 
 ## 生成验证码
 
@@ -118,6 +139,105 @@ function check() {
 }
 ```
 
-## Android 客户端示例
+# 移动端使用
+
+## Android Retrofit Api
+
+```kotlin
+interface ICaptchaApi {
+
+    @POST("/captcha/gen")
+    fun gen(@Body req: CaptchaGenReq): Call<BaseResp<CaptchaGenData>>
+
+    @POST("/captcha/check")
+    fun check(@Body req: CaptchaCheckReq): Call<BaseResp<Boolean>>
+}
+```
+
+## Android UI
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+
+    var captchaGenData: CaptchaGenData? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        ivCode.setOnClickListener {
+            loadImageCode()
+        }
+        btnCheck.setOnClickListener {
+            check()
+        }
+
+        loadImageCode()
+    }
+
+    private fun loadImageCode() {
+        val req = CaptchaGenReq()
+        req.channel = "account_pwd_change"
+        req.userId = "12345"
+
+        Apis.captchaApi.gen(req).enqueue(object : Callback<BaseResp<CaptchaGenData>> {
+
+            override fun onResponse(call: Call<BaseResp<CaptchaGenData>>,
+                                    response: Response<BaseResp<CaptchaGenData>>) {
+                if (response.isSuccessful && response.body() != null) {
+                    response.body()?.data?.let {
+                        captchaGenData = it
+
+                        val bytes = Base64.decode(it.imageBase64, Base64.DEFAULT)
+                        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                        ivCode.setImageBitmap(bitmap)
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<BaseResp<CaptchaGenData>>, t: Throwable) {
+            }
+        })
+    }
+
+    private fun check() {
+        val code = edtCode.text.toString()
+        if (code.isNotEmpty()) {
+            captchaGenData?.let {
+                val req = CaptchaCheckReq().apply {
+                    captchaId = it.captchaId
+                    captchaText = code
+                    channel = "account_pwd_change"
+                    userId = "12345"
+                }
+
+                Apis.captchaApi.check(req).enqueue(object : Callback<BaseResp<Boolean>> {
+
+                    override fun onResponse(call: Call<BaseResp<Boolean>>,
+                                            response: Response<BaseResp<Boolean>>) {
+                        if (response.isSuccessful) {
+                            response.body()?.data?.let {
+                                val msg = if (it) "check success " else "check fail"
+                                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+
+                    override fun onFailure(call: Call<BaseResp<Boolean>>, t: Throwable) {
+                    }
+                })
+            }
+        } else {
+            Toast.makeText(this, "请输入验证码", Toast.LENGTH_LONG).show()
+        }
+    }
+}
+```
+
+## 效果展示
+
+![](doc/111.png)
+
+# 其他
 
 [Android 客户端](https://github.com/LiushuiXiaoxia/easy-captcha-android)
